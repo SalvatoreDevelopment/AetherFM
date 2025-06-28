@@ -1,8 +1,8 @@
 {
-  "Author": "IlTuoNome",
+  "Author": "SalvatoreDevelopment",
   "Name": "AetherFM",
   "InternalName": "AetherFM",
-  "AssemblyVersion": "0.0.0.4",
+  "AssemblyVersion": "1.0.0",
   "Description": "In-game radio streaming for Final Fantasy XIV. Enter a stream URL and listen to your favorite radio!",
   "ApplicableVersion": "any",
   "Tags": [
@@ -20,5 +20,5 @@
   "IconUrl": "",
   "Punchline": "Listen to radio in Eorzea!",
   "AcceptsFeedback": true,
-  "Version": "0.0.0.4"
+  "Version": "1.0.0"
 } 
