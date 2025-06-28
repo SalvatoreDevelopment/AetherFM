@@ -441,7 +441,4 @@ $RECYCLE.BIN/
 *.DS_Store
 
 # Plugin specific
-AetherFM.zip
-
-# Ignore lock file if not needed
-packages.lock.json 
+AetherFM.zip 
