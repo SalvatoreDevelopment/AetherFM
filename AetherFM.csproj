@@ -1,14 +1,13 @@
 <Project Sdk="Dalamud.NET.Sdk/12.0.2">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <OutputType>Library</OutputType>
-    <AssemblyTitle>AetherFM</AssemblyTitle>
-    <Description>A radio plugin for FFXIV</Description>
-    <Version>1.0.0</Version>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>latest</LangVersion>
+<TargetFramework>net9.0</TargetFramework>    <OutputType>Library</OutputType>
     <RootNamespace>AetherFM</RootNamespace>
+    <AssemblyName>AetherFM</AssemblyName>
+    <Version>1.0.0</Version>
+    <Description>A radio plugin for FFXIV</Description>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 
@@ -16,4 +15,4 @@
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
 
-</Project> 
+</Project>
