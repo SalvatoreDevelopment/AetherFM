@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![AetherFM Icon](https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/master/assets/aetherfm_icon.png)
+![AetherFM Icon](https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/master/images/icon.png)
 
 **Listen to thousands of real radio stations directly in-game while playing Final Fantasy XIV!**
 
@@ -176,7 +176,7 @@ To prepare a release for distribution:
 ## 🎨 Customization
 
 ### Adding Custom Icons
-1. Place your icon (256x256 PNG recommended) in the `assets/` folder
+1. Place your icon (256x256 PNG recommended) in the `images/` folder
 2. Upload to GitHub and get the RAW link
 3. Update `pluginmaster.json` with the icon URL
 4. Update this README with the icon link
