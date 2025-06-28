@@ -2,7 +2,7 @@
   "Author": "IlTuoNome",
   "Name": "AetherFM",
   "InternalName": "AetherFM",
-  "AssemblyVersion": "0.0.0.3",
+  "AssemblyVersion": "0.0.0.4",
   "Description": "In-game radio streaming for Final Fantasy XIV. Enter a stream URL and listen to your favorite radio!",
   "ApplicableVersion": "any",
   "Tags": [
