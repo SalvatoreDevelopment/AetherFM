@@ -29,13 +29,13 @@ public class RadioWindow : Window, IDisposable
     private string stationSearch = string.Empty;
     private List<string> availableCountries = new List<string> { "All", "Italy", "United States", "United Kingdom", "France", "Germany", "Spain", "Japan", "Brazil", "Canada", "Australia" };
     private int selectedCountryIndex = 0;
-    private float volume = 50f; // Volume di default (50%)
+    private float volume = 50f; // Default volume (50%)
 
     public RadioWindow(Plugin plugin) : base("AetherFM - Radio Player")
     {
         this.plugin = plugin;
         this.radioUrl = plugin.Configuration.RadioUrl ?? string.Empty;
-        DownloadStationsFromRadioBrowser(); // Caricamento automatico all'apertura
+        DownloadStationsFromRadioBrowser(); // Automatic loading on window open
         this.SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(600, 400),
@@ -91,7 +91,7 @@ public class RadioWindow : Window, IDisposable
         ImGui.SetNextItemWidth(220f);
         ImGui.InputTextWithHint("##stationSearch", "Search by name...", ref stationSearch, 100);
 
-        // Volume slider in alto con icona
+        // Volume slider at the top with icon
         ImGui.SameLine();
         string volIcon = volume == 0 ? "🔇" : (volume < 50 ? "🔈" : "🔊");
         ImGui.TextUnformatted(volIcon);
@@ -137,17 +137,17 @@ public class RadioWindow : Window, IDisposable
 
         ImGui.Spacing();
         ImGui.TextUnformatted("Stations:");
-        Vector2 tableSize = new Vector2(ImGui.GetContentRegionAvail().X, 400); // Altezza fissa per lo scroll
+        Vector2 tableSize = new Vector2(ImGui.GetContentRegionAvail().X, 400); // Fixed height for scroll
         if (ImGui.BeginTable("##stationsTable", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
         {
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 0.40f);
             ImGui.TableSetupColumn("Country", ImGuiTableColumnFlags.WidthFixed, 90f);
             ImGui.TableSetupColumn("Genre", ImGuiTableColumnFlags.WidthStretch, 0.45f);
-            ImGui.TableSetupColumn("Action", ImGuiTableColumnFlags.WidthFixed, 70f); // Colonna bottoni con testo
+            ImGui.TableSetupColumn("Action", ImGuiTableColumnFlags.WidthFixed, 70f); // Button column with text
             ImGui.TableHeadersRow();
             for (int i = 0; i < stations.Count; i++)
             {
-                // Ricerca su nome, genere e paese
+                // Search by name, genre, and country
                 bool matches = true;
                 if (!string.IsNullOrEmpty(stationSearch)) {
                     string search = stationSearch.ToLowerInvariant();
@@ -158,14 +158,14 @@ public class RadioWindow : Window, IDisposable
                 if (!matches)
                     continue;
                 ImGui.TableNextRow();
-                // Evidenzia la riga se la stazione è in play (solo per URL)
+                // Highlight the row if the station is playing (by URL only)
                 bool isActive = isPlaying && radioUrl == stations[i].Url;
                 if (isActive) {
-                    ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.1f, 0.7f, 0.1f, 0.45f))); // Più contrasto
+                    ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.1f, 0.7f, 0.1f, 0.45f))); // More contrast
                 }
                 ImGui.TableSetColumnIndex(0);
                 if (isActive) {
-                    ImGui.TextUnformatted($"▶ {stations[i].Name}"); // Icona anche nel nome
+                    ImGui.TextUnformatted($"▶ {stations[i].Name}"); // Icon also in the name
                 } else {
                     ImGui.TextUnformatted(stations[i].Name);
                 }
@@ -174,7 +174,7 @@ public class RadioWindow : Window, IDisposable
                 ImGui.TableSetColumnIndex(1);
                 ImGui.TextUnformatted(stations[i].Country);
                 ImGui.TableSetColumnIndex(2);
-                // Wrapping e anteprima per Genre
+                // Wrapping and preview for Genre
                 string genre = stations[i].Genre;
                 string genrePreview = genre;
                 if (genre.Length > 40) genrePreview = genre.Substring(0, 37) + "...";
@@ -182,37 +182,37 @@ public class RadioWindow : Window, IDisposable
                 if (ImGui.IsItemHovered() && genre.Length > 40)
                     ImGui.SetTooltip(genre);
                 ImGui.TableSetColumnIndex(3);
-                // Bottone Play/Stop con testo
+                // Play/Stop button with text
                 if (isActive) {
                     ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.1f, 0.7f, 0.1f, 1f));
                     if (ImGui.Button($"■ Stop##{i}"))
                     {
                         plugin.RadioManager.Stop();
-                        // Lo stato verrà aggiornato dalla callback OnStatusChanged
+                        // The state will be updated by the OnStatusChanged callback
                     }
                     ImGui.PopStyleColor();
                 } else {
                     if (ImGui.Button($"▶ Play##{i}"))
                     {
-                        // Aggiorna subito la selezione e l'URL
+                        // Immediately update selection and URL
                         selectedStation = i;
                         radioUrl = stations[i].Url;
                         plugin.Configuration.RadioUrl = radioUrl;
                         plugin.Configuration.Save();
-                        // Ferma sempre la radio attuale prima di avviare la nuova
+                        // Always stop the current radio before starting a new one
                         plugin.RadioManager.Stop();
-                        // Avvia la nuova radio con il volume corrente
+                        // Start the new radio with the current volume
                         plugin.RadioManager.Start(radioUrl, OnStatusChanged, volume / 100f);
-                        // Lo stato verrà aggiornato SOLO nella callback OnStatusChanged
+                        // The state will be updated ONLY in the OnStatusChanged callback
                     }
                 }
-                // Messaggio di errore vicino alla riga se la radio non parte
+                // Error message near the row if the radio fails to start
                 if (isActive && status.StartsWith("Error")) {
                     ImGui.TableSetColumnIndex(0);
                     ImGui.SameLine();
                     ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), "! Error: could not start stream");
                 }
-                // Spaziatura extra tra le righe
+                // Extra spacing between rows
                 ImGui.TableSetColumnIndex(0);
                 ImGui.Dummy(new Vector2(0, 2));
             }
@@ -239,7 +239,7 @@ public class RadioWindow : Window, IDisposable
         }
 
         ImGui.Spacing();
-        // Status colorato
+        // Colored status
         Vector4 statusColor = status.StartsWith("Playing") ? new Vector4(0,1,0,1) :
                               status.StartsWith("Error") ? new Vector4(1,0,0,1) :
                               status.StartsWith("Stopped") ? new Vector4(1,1,0,1) :

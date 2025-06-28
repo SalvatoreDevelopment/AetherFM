@@ -6,31 +6,31 @@ namespace SamplePlugin.Utils;
 public static class PluginUtils
 {
     /// <summary>
-    /// Formatta un timestamp in formato leggibile
+    /// Formats a timestamp in a readable format
     /// </summary>
-    /// <param name="timestamp">Timestamp da formattare</param>
-    /// <returns>Stringa formattata</returns>
+    /// <param name="timestamp">Timestamp to format</param>
+    /// <returns>Formatted string</returns>
     public static string FormatTimestamp(DateTime timestamp)
     {
         return timestamp.ToString("HH:mm:ss");
     }
 
     /// <summary>
-    /// Calcola la distanza tra due posizioni
+    /// Calculates the distance between two positions
     /// </summary>
-    /// <param name="pos1">Prima posizione</param>
-    /// <param name="pos2">Seconda posizione</param>
-    /// <returns>Distanza in unità di gioco</returns>
+    /// <param name="pos1">First position</param>
+    /// <param name="pos2">Second position</param>
+    /// <returns>Distance in game units</returns>
     public static float CalculateDistance(System.Numerics.Vector3 pos1, System.Numerics.Vector3 pos2)
     {
         return System.Numerics.Vector3.Distance(pos1, pos2);
     }
 
     /// <summary>
-    /// Logga un messaggio con timestamp
+    /// Logs a message with timestamp
     /// </summary>
-    /// <param name="log">Servizio di log</param>
-    /// <param name="message">Messaggio da loggare</param>
+    /// <param name="log">Log service</param>
+    /// <param name="message">Message to log</param>
     public static void LogWithTimestamp(IPluginLog log, string message)
     {
         var timestamp = FormatTimestamp(DateTime.Now);
@@ -39,10 +39,10 @@ public static class PluginUtils
     }
 
     /// <summary>
-    /// Logga un messaggio di debug con timestamp
+    /// Logs a debug message with timestamp
     /// </summary>
-    /// <param name="log">Servizio di log</param>
-    /// <param name="message">Messaggio da loggare</param>
+    /// <param name="log">Log service</param>
+    /// <param name="message">Message to log</param>
     public static void LogDebugWithTimestamp(IPluginLog log, string message)
     {
         var timestamp = FormatTimestamp(DateTime.Now);
@@ -51,10 +51,10 @@ public static class PluginUtils
     }
 
     /// <summary>
-    /// Logga un messaggio di errore con timestamp
+    /// Logs an error message with timestamp
     /// </summary>
-    /// <param name="log">Servizio di log</param>
-    /// <param name="message">Messaggio da loggare</param>
+    /// <param name="log">Log service</param>
+    /// <param name="message">Message to log</param>
     public static void LogErrorWithTimestamp(IPluginLog log, string message)
     {
         var timestamp = FormatTimestamp(DateTime.Now);
