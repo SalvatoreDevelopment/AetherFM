@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![AetherFM Icon](https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/main/assets/aetherfm_icon.png)
+![AetherFM Icon](https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/master/assets/aetherfm_icon.png)
 
 **Listen to thousands of real radio stations directly in-game while playing Final Fantasy XIV!**
 
