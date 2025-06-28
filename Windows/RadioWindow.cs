@@ -5,8 +5,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Net;
+using Newtonsoft.Json;
+using System.Linq;
 
 namespace AetherFM.Windows;
+
+public class RadioBrowserStation
+{
+    public string name { get; set; }
+    public string url_resolved { get; set; }
+    public string country { get; set; }
+    public string tags { get; set; }
+}
 
 public class RadioWindow : Window, IDisposable
 {
@@ -16,38 +26,53 @@ public class RadioWindow : Window, IDisposable
     private bool isPlaying = false;
     private List<RadiosureStation> stations = new();
     private int selectedStation = -1;
-    private string stationsFile = "stations.rsd";
     private string stationSearch = string.Empty;
+    private List<string> availableCountries = new List<string> { "All", "Italy", "United States", "United Kingdom", "France", "Germany", "Spain", "Japan", "Brazil", "Canada", "Australia" };
+    private int selectedCountryIndex = 0;
+    private float volume = 50f; // Volume di default (50%)
 
-    public RadioWindow(Plugin plugin) : base("AetherFM - Radio Player", ImGuiWindowFlags.AlwaysAutoResize)
+    public RadioWindow(Plugin plugin) : base("AetherFM - Radio Player")
     {
         this.plugin = plugin;
         this.radioUrl = plugin.Configuration.RadioUrl ?? string.Empty;
-        LoadStations();
-    }
-
-    private void LoadStations()
-    {
-        if (File.Exists(stationsFile))
+        DownloadStationsFromRadioBrowser(); // Caricamento automatico all'apertura
+        this.SizeConstraints = new WindowSizeConstraints
         {
-            stations = RadiosureParser.Parse(stationsFile);
-        }
+            MinimumSize = new Vector2(600, 400),
+            MaximumSize = new Vector2(2000, 1200)
+        };
     }
 
-    private void DownloadLatestStations()
+    private void DownloadStationsFromRadioBrowser(string country = null)
     {
         try
         {
-            var today = DateTime.UtcNow.ToString("yyyy-MM-dd");
-            var url = $"http://82.66.77.189/stations-{today}.rsd";
+            string url;
+            if (string.IsNullOrEmpty(country) || country == "All")
+                url = "https://de1.api.radio-browser.info/json/stations";
+            else
+                url = $"https://de1.api.radio-browser.info/json/stations/bycountry/{country}";
             using var client = new WebClient();
-            client.DownloadFile(url, stationsFile);
-            LoadStations();
-            status = "Stations updated!";
+            var json = client.DownloadString(url);
+            var rbStations = JsonConvert.DeserializeObject<List<RadioBrowserStation>>(json);
+            stations = rbStations
+                .Where(s => s.url_resolved != null && s.url_resolved.EndsWith(".mp3") && s.url_resolved.StartsWith("http://"))
+                .Select(s => new RadiosureStation
+                {
+                    Name = s.name,
+                    Url = s.url_resolved,
+                    Country = s.country,
+                    Genre = s.tags,
+                    Language = ""
+                })
+                .GroupBy(s => s.Name + "|" + s.Url)
+                .Select(g => g.First())
+                .ToList();
+            status = $"Loaded {stations.Count} stations from Radio Browser{(string.IsNullOrEmpty(country) || country == "All" ? "" : " for " + country)}";
         }
         catch (Exception ex)
         {
-            status = $"Error updating stations: {ex.Message}";
+            status = $"Error loading from Radio Browser: {ex.Message}";
         }
     }
 
@@ -55,32 +80,47 @@ public class RadioWindow : Window, IDisposable
 
     public override void Draw()
     {
-        ImGui.TextUnformatted("Select a radio station or enter a custom URL:");
-        ImGui.SetNextItemWidth(300f);
-        if (ImGui.InputText("##radioUrl", ref radioUrl, 256))
-        {
-            plugin.Configuration.RadioUrl = radioUrl;
-            plugin.Configuration.Save();
-            selectedStation = -1;
-        }
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(16, 16));
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(10, 8));
+
+        ImGui.TextUnformatted("🎵  AetherFM Radio Player");
+        ImGui.Separator();
+        ImGui.Spacing();
 
         ImGui.TextUnformatted("Search station:");
-        ImGui.SetNextItemWidth(200f);
-        ImGui.InputText("##stationSearch", ref stationSearch, 100);
+        ImGui.SetNextItemWidth(220f);
+        ImGui.InputTextWithHint("##stationSearch", "Search by name...", ref stationSearch, 100);
 
-        if (ImGui.BeginCombo("Stations", selectedStation >= 0 && selectedStation < stations.Count ? stations[selectedStation].Name : "Select station"))
+        // Volume slider in alto con icona
+        ImGui.SameLine();
+        string volIcon = volume == 0 ? "🔇" : (volume < 50 ? "🔈" : "🔊");
+        ImGui.TextUnformatted(volIcon);
+        ImGui.SameLine();
+        ImGui.TextUnformatted("Volume:");
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(140f);
+        float prevVolume = volume;
+        ImGui.SliderFloat("##volumeSlider", ref volume, 0f, 100f, "%.0f%%", ImGuiSliderFlags.AlwaysClamp);
+        if (isPlaying && Math.Abs(volume - prevVolume) > 0.01f)
         {
-            for (int i = 0; i < stations.Count; i++)
+            plugin.RadioManager.SetVolume(volume / 100f);
+        }
+        ImGui.Spacing();
+
+        ImGui.TextUnformatted("Country filter:");
+        ImGui.SetNextItemWidth(220f);
+        if (ImGui.BeginCombo("##countryCombo", availableCountries[selectedCountryIndex]))
+        {
+            for (int i = 0; i < availableCountries.Count; i++)
             {
-                if (!string.IsNullOrEmpty(stationSearch) && !stations[i].Name.Contains(stationSearch, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                bool isSelected = (selectedStation == i);
-                if (ImGui.Selectable(stations[i].Name, isSelected))
+                bool isSelected = (selectedCountryIndex == i);
+                if (ImGui.Selectable(availableCountries[i], isSelected))
                 {
-                    selectedStation = i;
-                    radioUrl = stations[i].Url;
-                    plugin.Configuration.RadioUrl = radioUrl;
-                    plugin.Configuration.Save();
+                    if (selectedCountryIndex != i) {
+                        selectedCountryIndex = i;
+                        var country = availableCountries[selectedCountryIndex];
+                        DownloadStationsFromRadioBrowser(country == "All" ? null : country);
+                    }
                 }
                 if (isSelected)
                     ImGui.SetItemDefaultFocus();
@@ -88,49 +128,130 @@ public class RadioWindow : Window, IDisposable
             ImGui.EndCombo();
         }
 
-        if (ImGui.Button(isPlaying ? "Stop" : "Play Radio", new Vector2(120, 0)))
+        ImGui.SameLine();
+        if (ImGui.Button("Load from Radio Browser"))
         {
-            if (!isPlaying)
-            {
-                var started = plugin.RadioManager.Start(radioUrl, OnStatusChanged);
-                if (started)
-                {
-                    isPlaying = true;
-                    status = "Playing";
-                }
-                else
-                {
-                    status = "Error: could not start stream";
-                }
-            }
-            else
-            {
-                plugin.RadioManager.Stop();
-                isPlaying = false;
-                status = "Stopped";
-            }
+            var country = availableCountries[selectedCountryIndex];
+            DownloadStationsFromRadioBrowser(country == "All" ? null : country);
         }
 
+        ImGui.Spacing();
+        ImGui.TextUnformatted("Stations:");
+        Vector2 tableSize = new Vector2(ImGui.GetContentRegionAvail().X, 400); // Altezza fissa per lo scroll
+        if (ImGui.BeginTable("##stationsTable", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY | ImGuiTableFlags.ScrollX, tableSize))
+        {
+            ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 0.40f);
+            ImGui.TableSetupColumn("Country", ImGuiTableColumnFlags.WidthFixed, 90f);
+            ImGui.TableSetupColumn("Genre", ImGuiTableColumnFlags.WidthStretch, 0.45f);
+            ImGui.TableSetupColumn("Action", ImGuiTableColumnFlags.WidthFixed, 70f); // Colonna bottoni con testo
+            ImGui.TableHeadersRow();
+            for (int i = 0; i < stations.Count; i++)
+            {
+                // Ricerca su nome, genere e paese
+                bool matches = true;
+                if (!string.IsNullOrEmpty(stationSearch)) {
+                    string search = stationSearch.ToLowerInvariant();
+                    matches = stations[i].Name.ToLowerInvariant().Contains(search)
+                        || stations[i].Genre.ToLowerInvariant().Contains(search)
+                        || stations[i].Country.ToLowerInvariant().Contains(search);
+                }
+                if (!matches)
+                    continue;
+                ImGui.TableNextRow();
+                // Evidenzia la riga se la stazione è in play (solo per URL)
+                bool isActive = isPlaying && radioUrl == stations[i].Url;
+                if (isActive) {
+                    ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(new Vector4(0.1f, 0.7f, 0.1f, 0.45f))); // Più contrasto
+                }
+                ImGui.TableSetColumnIndex(0);
+                if (isActive) {
+                    ImGui.TextUnformatted($"▶ {stations[i].Name}"); // Icona anche nel nome
+                } else {
+                    ImGui.TextUnformatted(stations[i].Name);
+                }
+                if (ImGui.IsItemHovered() && stations[i].Name.Length > 30)
+                    ImGui.SetTooltip(stations[i].Name);
+                ImGui.TableSetColumnIndex(1);
+                ImGui.TextUnformatted(stations[i].Country);
+                ImGui.TableSetColumnIndex(2);
+                // Wrapping e anteprima per Genre
+                string genre = stations[i].Genre;
+                string genrePreview = genre;
+                if (genre.Length > 40) genrePreview = genre.Substring(0, 37) + "...";
+                ImGui.TextWrapped(genrePreview);
+                if (ImGui.IsItemHovered() && genre.Length > 40)
+                    ImGui.SetTooltip(genre);
+                ImGui.TableSetColumnIndex(3);
+                // Bottone Play/Stop con testo
+                if (isActive) {
+                    ImGui.PushStyleColor(ImGuiCol.Button, new Vector4(0.1f, 0.7f, 0.1f, 1f));
+                    if (ImGui.Button($"■ Stop##{i}"))
+                    {
+                        plugin.RadioManager.Stop();
+                        // Lo stato verrà aggiornato dalla callback OnStatusChanged
+                    }
+                    ImGui.PopStyleColor();
+                } else {
+                    if (ImGui.Button($"▶ Play##{i}"))
+                    {
+                        // Aggiorna subito la selezione e l'URL
+                        selectedStation = i;
+                        radioUrl = stations[i].Url;
+                        plugin.Configuration.RadioUrl = radioUrl;
+                        plugin.Configuration.Save();
+                        // Ferma sempre la radio attuale prima di avviare la nuova
+                        plugin.RadioManager.Stop();
+                        // Avvia la nuova radio con il volume corrente
+                        plugin.RadioManager.Start(radioUrl, OnStatusChanged, volume / 100f);
+                        // Lo stato verrà aggiornato SOLO nella callback OnStatusChanged
+                    }
+                }
+                // Messaggio di errore vicino alla riga se la radio non parte
+                if (isActive && status.StartsWith("Error")) {
+                    ImGui.TableSetColumnIndex(0);
+                    ImGui.SameLine();
+                    ImGui.TextColored(new Vector4(1,0.2f,0.2f,1), "! Error: could not start stream");
+                }
+                // Spaziatura extra tra le righe
+                ImGui.TableSetColumnIndex(0);
+                ImGui.Dummy(new Vector2(0, 2));
+            }
+            ImGui.EndTable();
+        }
+
+        // --- OPTIONAL CUSTOM URL FIELD ---
+        ImGui.Spacing();
+        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.7f, 0.7f, 0.7f, 1f));
+        ImGui.TextUnformatted("(Optional) Enter a custom stream URL:");
+        ImGui.PopStyleColor();
+        ImGui.SetNextItemWidth(320f);
+        ImGui.InputTextWithHint("##radioUrl", "http://...", ref radioUrl, 256);
         ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Use this field only if you want to listen to a radio not present in the list.");
+        // --- END OPTIONAL FIELD ---
+
+        ImGui.Spacing();
         if (ImGui.Button("Refresh status"))
         {
             status = plugin.RadioManager.GetStatus();
         }
 
-        ImGui.SameLine();
-        if (ImGui.Button("Update stations"))
-        {
-            DownloadLatestStations();
-        }
-
         ImGui.Spacing();
-        ImGui.TextUnformatted($"Status: {status}");
+        // Status colorato
+        Vector4 statusColor = status.StartsWith("Playing") ? new Vector4(0,1,0,1) :
+                              status.StartsWith("Error") ? new Vector4(1,0,0,1) :
+                              status.StartsWith("Stopped") ? new Vector4(1,1,0,1) :
+                              new Vector4(1,1,1,1);
+        ImGui.TextColored(statusColor, $"Status: {status}");
+
+        ImGui.PopStyleVar(2);
     }
 
     private void OnStatusChanged(string newStatus)
     {
         status = newStatus;
-        if (newStatus == "Stopped" || newStatus.StartsWith("Error"))
-            isPlaying = false;
+        isPlaying = newStatus == "Playing";
     }
 } 

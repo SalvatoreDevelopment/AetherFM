@@ -12,11 +12,11 @@ public class RadioManager : IDisposable
     private MediaFoundationReader? reader;
     private Thread? radioThread;
     private CancellationTokenSource? cts;
-    private string status = "Fermata";
+    private string status = "Stopped";
     private string? currentUrl;
     private Action<string>? statusCallback;
 
-    public bool Start(string url, Action<string>? onStatusChanged = null)
+    public bool Start(string url, Action<string>? onStatusChanged = null, float volume = 0.5f)
     {
         if (waveOut != null || radioThread != null)
         {
@@ -24,31 +24,32 @@ public class RadioManager : IDisposable
         }
         if (string.IsNullOrWhiteSpace(url))
         {
-            status = "Errore: URL vuoto";
+            status = "Error: empty URL";
             onStatusChanged?.Invoke(status);
             return false;
         }
         statusCallback = onStatusChanged;
         cts = new CancellationTokenSource();
-        radioThread = new Thread(() => PlayRadio(url, cts.Token));
+        radioThread = new Thread(() => PlayRadio(url, cts.Token, volume));
         radioThread.IsBackground = true;
         radioThread.Start();
         return true;
     }
 
-    private void PlayRadio(string url, CancellationToken token)
+    private void PlayRadio(string url, CancellationToken token, float volume)
     {
         try
         {
-            status = "Connessione...";
+            status = "Connecting...";
             statusCallback?.Invoke(status);
             currentUrl = url;
             using (reader = new MediaFoundationReader(url))
             using (waveOut = new WaveOutEvent())
             {
                 waveOut.Init(reader);
+                try { waveOut.Volume = volume; } catch { /* Not supported on all APIs, ignore if fails */ }
                 waveOut.Play();
-                status = "In riproduzione";
+                status = "Playing";
                 statusCallback?.Invoke(status);
                 while (waveOut.PlaybackState == PlaybackState.Playing && !token.IsCancellationRequested)
                 {
@@ -56,12 +57,12 @@ public class RadioManager : IDisposable
                 }
                 waveOut.Stop();
             }
-            status = "Fermata";
+            status = "Stopped";
             statusCallback?.Invoke(status);
         }
         catch (Exception ex)
         {
-            status = $"Errore: {ex.Message}";
+            status = $"Error: {ex.Message}";
             statusCallback?.Invoke(status);
         }
         finally
@@ -79,7 +80,7 @@ public class RadioManager : IDisposable
     {
         cts?.Cancel();
         waveOut?.Stop();
-        status = "Fermata";
+        status = "Stopped";
         statusCallback?.Invoke(status);
     }
 
@@ -88,5 +89,13 @@ public class RadioManager : IDisposable
     public void Dispose()
     {
         Stop();
+    }
+
+    public void SetVolume(float volume)
+    {
+        if (waveOut != null)
+        {
+            try { waveOut.Volume = volume; } catch { /* Ignora se non supportato */ }
+        }
     }
 } 

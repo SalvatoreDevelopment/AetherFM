@@ -2,7 +2,7 @@
 
 ## [0.0.0.4] - 2025-06-28
 ### Changed
-- Aggiornamento di versione e mantenimento changelog.
+- Version update and changelog maintenance.
 
 ## [0.0.0.3] - 2025-06-28
 ### Changed

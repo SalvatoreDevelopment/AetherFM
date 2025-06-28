@@ -1,129 +1,181 @@
-# Script di build per AetherFM
-# Esegui questo script per compilare e copiare il plugin nella cartella di sviluppo
+# Build script for AetherFM
+# Usage:
+#   .\build.ps1 -deploy-local     # Deploys to devPlugins for local testing
+#   .\build.ps1 -switch-to-repo   # Removes devPlugins/AetherFM to test repo version
+#   .\build.ps1 -zip              # Creates the release ZIP
+#
+# Only one version (local or repo) should be active at a time!
 
 param(
     [string]$Configuration = "Debug",
     [switch]$Clean,
-    [switch]$Deploy
+    [switch]$DeployLocal,
+    [switch]$SwitchToRepo,
+    [switch]$Zip
 )
 
-Write-Host "=== Build Script per AetherFM ===" -ForegroundColor Green
+Write-Host "=== Build Script for AetherFM ===" -ForegroundColor Green
 
-# Percorso della cartella di sviluppo Dalamud
-$DalamudDevPath = "$env:APPDATA\XIVLauncher\addon\Hooks\dev\Plugins\AetherFM"
+# Correct path for Dalamud dev folder
+$DalamudDevPath = "$env:APPDATA\XIVLauncher\devPlugins\AetherFM"
 
-# Pulizia se richiesto
+# Clean if requested
 if ($Clean) {
-    Write-Host "Pulizia dei file di build..." -ForegroundColor Yellow
+    Write-Host "Cleaning build files..." -ForegroundColor Yellow
     dotnet clean
     if (Test-Path $DalamudDevPath) {
         Remove-Item $DalamudDevPath -Recurse -Force
-        Write-Host "Cartella di sviluppo pulita." -ForegroundColor Green
+        Write-Host "Development folder cleaned." -ForegroundColor Green
     }
 }
 
-# Build del progetto
-Write-Host "Compilazione del progetto..." -ForegroundColor Yellow
-$buildResult = dotnet build --configuration $Configuration
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Errore durante la compilazione!" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host "Compilazione completata con successo!" -ForegroundColor Green
-
-# Deploy se richiesto
-if ($Deploy) {
-    Write-Host "Deploy nella cartella di sviluppo..." -ForegroundColor Yellow
-    
-    # Crea la cartella se non esiste
+# Deploy local version for testing
+if ($DeployLocal) {
+    Write-Host "Deploying local build to devPlugins..." -ForegroundColor Yellow
     if (!(Test-Path $DalamudDevPath)) {
         New-Item -ItemType Directory -Path $DalamudDevPath -Force
     }
-    
-    # Copia i file necessari
-    $possiblePaths = @("bin\$Configuration\net7.0", "bin\$Configuration")
-    $filesToCopy = @("AetherFM.dll", "AetherFM.pdb", "AetherFM.json")
-    
+    $possiblePaths = @("bin\$Configuration\net9.0", "bin\$Configuration")
+    $filesToCopy = @(
+        "AetherFM.dll", "AetherFM.pdb", "AetherFM.json",
+        "NAudio.dll", "NAudio.Core.dll", "NAudio.WinMM.dll", "NAudio.Wasapi.dll", "NAudio.Midi.dll", "NAudio.Asio.dll"
+    )
     foreach ($file in $filesToCopy) {
         $found = $false
         foreach ($sourcePath in $possiblePaths) {
             $sourceFile = Join-Path $sourcePath $file
             if (Test-Path $sourceFile) {
                 $destFile = Join-Path $DalamudDevPath $file
-                Copy-Item $sourceFile $destFile -Force
-                Write-Host "Copiato: $file da $sourcePath" -ForegroundColor Cyan
-                $found = $true
-                break
+                try {
+                    Copy-Item $sourceFile $destFile -Force
+                    Write-Host "Copied: $file from $sourcePath" -ForegroundColor Cyan
+                    $found = $true
+                    break
+                } catch {
+                    $errMsg = $_.Exception.Message
+                    Write-Host ("Error copying {0}: {1}" -f $file, $errMsg) -ForegroundColor Red
+                }
             }
         }
         if (-not $found) {
-            Write-Host "File non trovato: $file" -ForegroundColor Yellow
+            Write-Host "File not found: $file" -ForegroundColor Yellow
         }
     }
-    
-    Write-Host "Deploy completato! Il plugin è pronto per il test." -ForegroundColor Green
-    Write-Host "Riavvia XIVLauncher per caricare le modifiche." -ForegroundColor Cyan
+    $naudioDlls = Get-ChildItem -Path "bin\$Configuration\net9.0" -Filter "NAudio*.dll" -File
+    foreach ($dll in $naudioDlls) {
+        $destFile = Join-Path $DalamudDevPath $dll.Name
+        try {
+            Copy-Item $dll.FullName $destFile -Force
+            Write-Host "Force copied: $($dll.Name)" -ForegroundColor Cyan
+        } catch {
+            $errMsg = $_.Exception.Message
+            Write-Host ("Error force copying {0}: {1}" -f $dll.Name, $errMsg) -ForegroundColor Red
+        }
+    }
+    Write-Host "Local deploy completed! Restart XIVLauncher to test local version." -ForegroundColor Green
+    exit 0
 }
 
-# Funzione per creare lo zip del plugin
+# Switch to repo version (remove devPlugins/AetherFM)
+if ($SwitchToRepo) {
+    if (Test-Path $DalamudDevPath) {
+        Remove-Item $DalamudDevPath -Recurse -Force
+        Write-Host "devPlugins/AetherFM removed. Now you can test the repository version!" -ForegroundColor Green
+    } else {
+        Write-Host "devPlugins/AetherFM not found. Already ready for repo version." -ForegroundColor Yellow
+    }
+    exit 0
+}
+
+# Build the project
+Write-Host "Building the project..." -ForegroundColor Yellow
+$buildResult = dotnet build --configuration $Configuration
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Build error!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Build completed successfully!" -ForegroundColor Green
+
+# Create ZIP for release if requested
 function Create-PluginZip {
-    Write-Host "Creazione ZIP per AetherFM..." -ForegroundColor Green
+    Write-Host "Creating ZIP for AetherFM..." -ForegroundColor Green
 
-    # Percorso della DLL compilata
+    # Paths
     $dllPath = "bin\Release\net9.0\AetherFM.dll"
+    $pdbPath = "bin\Release\net9.0\AetherFM.pdb"
     $jsonPath = "AetherFM.json"
+    $naudioPaths = @(
+        "bin\Release\net9.0\NAudio.dll",
+        "bin\Release\net9.0\NAudio.Core.dll",
+        "bin\Release\net9.0\NAudio.WinMM.dll",
+        "bin\Release\net9.0\NAudio.Wasapi.dll",
+        "bin\Release\net9.0\NAudio.Midi.dll",
+        "bin\Release\net9.0\NAudio.Asio.dll"
+    )
+    $binDir = "bin\Release\net9.0"
 
-    # Verifica che i file esistano
+    # Copy JSON file to output folder
+    if (Test-Path $jsonPath) {
+        Copy-Item $jsonPath -Destination $binDir -Force
+        Write-Host "AetherFM.json copied to $binDir" -ForegroundColor Cyan
+    } else {
+        Write-Host "ERROR: AetherFM.json file not found!" -ForegroundColor Red
+    }
+
+    # Check that files exist
     if (-not (Test-Path $dllPath)) {
-        Write-Host "ERRORE: File DLL non trovato in $dllPath" -ForegroundColor Red
-        Write-Host "Assicurati di aver compilato il progetto con: dotnet build -c Release" -ForegroundColor Yellow
+        Write-Host "ERROR: DLL file not found in $dllPath" -ForegroundColor Red
+        Write-Host "Make sure you have built the project with: dotnet build -c Release" -ForegroundColor Yellow
         exit 1
     }
 
     if (-not (Test-Path $jsonPath)) {
-        Write-Host "ERRORE: File JSON non trovato in $jsonPath" -ForegroundColor Red
+        Write-Host "ERROR: JSON file not found in $jsonPath" -ForegroundColor Red
         exit 1
     }
 
-    # Nome del file ZIP
+    # ZIP file name
     $zipName = "AetherFM.zip"
 
-    # Rimuovi il file ZIP esistente se presente
+    # Remove existing ZIP file if present
     if (Test-Path $zipName) {
         Remove-Item $zipName -Force
-        Write-Host "File ZIP esistente rimosso." -ForegroundColor Yellow
+        Write-Host "Existing ZIP file removed." -ForegroundColor Yellow
     }
 
+    $filesToZip = @($dllPath, $pdbPath, $jsonPath) + $naudioPaths
+
     try {
-        # Crea il file ZIP
-        Compress-Archive -Path $dllPath, $jsonPath -DestinationPath $zipName -Force
+        # Create the ZIP file
+        Compress-Archive -Path $filesToZip -DestinationPath $zipName -Force
         
-        # Verifica che il file ZIP sia stato creato
+        # Check that the ZIP file was created
         if (Test-Path $zipName) {
             $zipSize = (Get-Item $zipName).Length
-            Write-Host "ZIP creato con successo: $zipName" -ForegroundColor Green
-            Write-Host "Dimensione: $($zipSize) bytes" -ForegroundColor Green
-            Write-Host "File inclusi:" -ForegroundColor Cyan
-            Write-Host "  - $dllPath" -ForegroundColor White
-            Write-Host "  - $jsonPath" -ForegroundColor White
+            Write-Host "ZIP created successfully: $zipName" -ForegroundColor Green
+            Write-Host "Size: $($zipSize) bytes" -ForegroundColor Green
+            Write-Host "Included files:" -ForegroundColor Cyan
+            foreach ($f in $filesToZip) { Write-Host "  - $f" -ForegroundColor White }
         } else {
-            Write-Host "ERRORE: Il file ZIP non è stato creato" -ForegroundColor Red
+            Write-Host "ERROR: ZIP file was not created" -ForegroundColor Red
             exit 1
         }
     } catch {
-        Write-Host "ERRORE durante la creazione dello ZIP: $($_.Exception.Message)" -ForegroundColor Red
+        $errMsg = $_.Exception.Message
+        Write-Host ("ERROR creating ZIP: {0}" -f $errMsg) -ForegroundColor Red
         exit 1
     }
 }
 
-# Esegui la funzione se richiesto da argomento
-if ($args -contains 'zip') {
+# Run the function if requested by argument
+if ($Zip) {
     Create-PluginZip
+    exit 0
 }
 
-# Esegui sempre la funzione per debug
+# Always run the function for debug
 Create-PluginZip
 
-Write-Host "Script completato!" -ForegroundColor Green 
+Write-Host "Script completed!" -ForegroundColor Green 
