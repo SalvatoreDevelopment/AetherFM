@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Version>0.0.0.4</Version>
-    <Description>AetherFM - In-game radio streaming for Final Fantasy XIV</Description>
-    <PackageProjectUrl>https://github.com/tuousername/AetherFM</PackageProjectUrl>
-    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
-    <IsPackable>false</IsPackable>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyTitle>AetherFM</AssemblyTitle>
+    <Description>A radio plugin for FFXIV</Description>
+    <Version>1.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    <AssemblyName>AetherFM</AssemblyName>
     <RootNamespace>AetherFM</RootNamespace>
   </PropertyGroup>
 
@@ -23,9 +22,19 @@
     <Reference Include="FFXIVClientStructs">
       <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
     </Reference>
+    <Reference Include="Lumina">
+      <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+    </Reference>
+    <Reference Include="Lumina.Excel">
+      <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
   </ItemGroup>
+
 </Project> 

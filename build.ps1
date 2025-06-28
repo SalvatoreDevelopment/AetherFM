@@ -67,4 +67,63 @@ if ($Deploy) {
     Write-Host "Riavvia XIVLauncher per caricare le modifiche." -ForegroundColor Cyan
 }
 
+# Funzione per creare lo zip del plugin
+function Create-PluginZip {
+    Write-Host "Creazione ZIP per AetherFM..." -ForegroundColor Green
+
+    # Percorso della DLL compilata
+    $dllPath = "bin\Release\net9.0\AetherFM.dll"
+    $jsonPath = "AetherFM.json"
+
+    # Verifica che i file esistano
+    if (-not (Test-Path $dllPath)) {
+        Write-Host "ERRORE: File DLL non trovato in $dllPath" -ForegroundColor Red
+        Write-Host "Assicurati di aver compilato il progetto con: dotnet build -c Release" -ForegroundColor Yellow
+        exit 1
+    }
+
+    if (-not (Test-Path $jsonPath)) {
+        Write-Host "ERRORE: File JSON non trovato in $jsonPath" -ForegroundColor Red
+        exit 1
+    }
+
+    # Nome del file ZIP
+    $zipName = "AetherFM.zip"
+
+    # Rimuovi il file ZIP esistente se presente
+    if (Test-Path $zipName) {
+        Remove-Item $zipName -Force
+        Write-Host "File ZIP esistente rimosso." -ForegroundColor Yellow
+    }
+
+    try {
+        # Crea il file ZIP
+        Compress-Archive -Path $dllPath, $jsonPath -DestinationPath $zipName -Force
+        
+        # Verifica che il file ZIP sia stato creato
+        if (Test-Path $zipName) {
+            $zipSize = (Get-Item $zipName).Length
+            Write-Host "ZIP creato con successo: $zipName" -ForegroundColor Green
+            Write-Host "Dimensione: $($zipSize) bytes" -ForegroundColor Green
+            Write-Host "File inclusi:" -ForegroundColor Cyan
+            Write-Host "  - $dllPath" -ForegroundColor White
+            Write-Host "  - $jsonPath" -ForegroundColor White
+        } else {
+            Write-Host "ERRORE: Il file ZIP non è stato creato" -ForegroundColor Red
+            exit 1
+        }
+    } catch {
+        Write-Host "ERRORE durante la creazione dello ZIP: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# Esegui la funzione se richiesto da argomento
+if ($args -contains 'zip') {
+    Create-PluginZip
+}
+
+# Esegui sempre la funzione per debug
+Create-PluginZip
+
 Write-Host "Script completato!" -ForegroundColor Green 
