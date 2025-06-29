@@ -43,6 +43,11 @@
 - **State Management:** Robust handling of play/stop states
 - **Stream Recovery:** Automatic retry for failed connections
 
+### 🌍 **Multilingual Support**
+- **English & Italian:** Full interface support for both languages
+- **Localized UI:** All text elements properly translated
+- **Cultural Adaptation:** Interface adapted for different regions
+
 ### 🛠️ **Developer-Friendly**
 - **Local Development:** Rapid testing with devPlugins deployment
 - **Repository Testing:** Easy switch between local and repository versions

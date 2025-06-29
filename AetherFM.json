@@ -27,5 +27,9 @@
   "IsTestingExclusive": false,
   "DownloadLinkInstall": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip",
   "DownloadLinkUpdate": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip",
-  "DownloadLinkTesting": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip"
+  "DownloadLinkTesting": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip",
+  "SupportedLanguages": [
+    "en",
+    "it"
+  ]
 } 
