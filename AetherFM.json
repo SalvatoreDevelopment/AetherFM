@@ -9,7 +9,8 @@
     "radio",
     "streaming",
     "music",
-    "ffxiv"
+    "ffxiv",
+    "audio"
   ],
   "DalamudApiLevel": 12,
   "LoadRequiredState": 0,
@@ -20,5 +21,11 @@
   "IconUrl": "",
   "Punchline": "Listen to radio in Eorzea!",
   "AcceptsFeedback": true,
-  "Version": "1.0.0"
+  "Version": "1.0.0",
+  "RepoUrl": "https://github.com/SalvatoreDevelopment/AetherFM",
+  "IsHide": false,
+  "IsTestingExclusive": false,
+  "DownloadLinkInstall": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip",
+  "DownloadLinkUpdate": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip",
+  "DownloadLinkTesting": "https://github.com/SalvatoreDevelopment/AetherFM/releases/latest/download/AetherFM.zip"
 } 

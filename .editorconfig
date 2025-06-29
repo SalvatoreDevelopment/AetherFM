@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{cs,csx,vb,vbx}]
+indent_size = 4
+
+[*.{json,js,jsx,ts,tsx}]
+indent_size = 2
+
+[*.{xml,csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{ps1,psm1,psd1}]
+indent_size = 4
+
+[*.{cmd,bat}]
+end_of_line = crlf
+
+[*.{sh,bash}]
+end_of_line = lf
+
+[*.md]
+trim_trailing_whitespace = false 
