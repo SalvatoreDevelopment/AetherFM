@@ -1,7 +1,7 @@
 using Dalamud.Plugin.Services;
 using System;
 
-namespace SamplePlugin.Utils;
+namespace AetherFM.Utils;
 
 public static class PluginUtils
 {
