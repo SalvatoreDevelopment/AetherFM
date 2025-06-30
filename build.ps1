@@ -103,10 +103,12 @@ function Create-PluginZip {
     Write-Host "Creating ZIP for AetherFM..." -ForegroundColor Green
 
     # Paths
-    $dllPath = "bin\Release\net9.0\AetherFM.dll"
-    $pdbPath = "bin\Release\net9.0\AetherFM.pdb"
+    $dllPathNet = "bin\Release\net9.0\AetherFM.dll"
+    $dllPathRoot = "bin\Release\AetherFM.dll"
+    $pdbPathNet = "bin\Release\net9.0\AetherFM.pdb"
+    $pdbPathRoot = "bin\Release\AetherFM.pdb"
     $jsonPath = "AetherFM.json"
-    $naudioPaths = @(
+    $naudioPathsNet = @(
         "bin\Release\net9.0\NAudio.dll",
         "bin\Release\net9.0\NAudio.Core.dll",
         "bin\Release\net9.0\NAudio.WinMM.dll",
@@ -114,19 +116,35 @@ function Create-PluginZip {
         "bin\Release\net9.0\NAudio.Midi.dll",
         "bin\Release\net9.0\NAudio.Asio.dll"
     )
-    $binDir = "bin\Release\net9.0"
+    $naudioPathsRoot = @(
+        "bin\Release\NAudio.dll",
+        "bin\Release\NAudio.Core.dll",
+        "bin\Release\NAudio.WinMM.dll",
+        "bin\Release\NAudio.Wasapi.dll",
+        "bin\Release\NAudio.Midi.dll",
+        "bin\Release\NAudio.Asio.dll"
+    )
+    $binDirNet = "bin\Release\net9.0"
+    $binDirRoot = "bin\Release"
 
     # Copy JSON file to output folder
     if (Test-Path $jsonPath) {
-        Copy-Item $jsonPath -Destination $binDir -Force
-        Write-Host "AetherFM.json copied to $binDir" -ForegroundColor Cyan
+        Copy-Item $jsonPath -Destination $binDirNet -Force -ErrorAction SilentlyContinue
+        Copy-Item $jsonPath -Destination $binDirRoot -Force -ErrorAction SilentlyContinue
+        Write-Host "AetherFM.json copied to $binDirNet and $binDirRoot" -ForegroundColor Cyan
     } else {
         Write-Host "ERROR: AetherFM.json file not found!" -ForegroundColor Red
     }
 
-    # Check that files exist
-    if (-not (Test-Path $dllPath)) {
-        Write-Host "ERROR: DLL file not found in $dllPath" -ForegroundColor Red
+    # Check that files exist (prefer net9.0, fallback to root)
+    $dllPath = if (Test-Path $dllPathNet) { $dllPathNet } elseif (Test-Path $dllPathRoot) { $dllPathRoot } else { $null }
+    $pdbPath = if (Test-Path $pdbPathNet) { $pdbPathNet } elseif (Test-Path $pdbPathRoot) { $pdbPathRoot } else { $null }
+    $naudioPaths = @()
+    foreach ($p in $naudioPathsNet) { if (Test-Path $p) { $naudioPaths += $p } }
+    foreach ($p in $naudioPathsRoot) { if (Test-Path $p) { $naudioPaths += $p } }
+
+    if (-not $dllPath) {
+        Write-Host "ERROR: DLL file not found in $dllPathNet or $dllPathRoot" -ForegroundColor Red
         Write-Host "Make sure you have built the project with: dotnet build -c Release" -ForegroundColor Yellow
         exit 1
     }
@@ -145,7 +163,7 @@ function Create-PluginZip {
         Write-Host "Existing ZIP file removed." -ForegroundColor Yellow
     }
 
-    $filesToZip = @($dllPath, $pdbPath, $jsonPath) + $naudioPaths
+    $filesToZip = @($dllPath, $pdbPath, $jsonPath) + $naudioPaths | Where-Object { $_ -ne $null }
 
     try {
         # Create the ZIP file
