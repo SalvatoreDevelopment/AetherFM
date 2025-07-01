@@ -21,7 +21,7 @@
   "IconUrl": "https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/master/images/icon.png",
   "Punchline": "Listen to radio in Eorzea!",
   "AcceptsFeedback": true,
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "RepoUrl": "https://github.com/SalvatoreDevelopment/AetherFM",
   "IsHide": false,
   "IsTestingExclusive": false,
