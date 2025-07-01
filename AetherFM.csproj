@@ -5,7 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>AetherFM</RootNamespace>
     <AssemblyName>AetherFM</AssemblyName>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Description>A radio plugin for FFXIV</Description>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
