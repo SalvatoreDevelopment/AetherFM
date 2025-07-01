@@ -1,5 +1,7 @@
 # AetherFM - Radio Streaming for Final Fantasy XIV
 
+**Note:** AetherFM is only supported on Windows. Due to its reliance on the NAudio library, audio playback is not available on Linux or non-Windows versions of Dalamud.
+
 <div align="center">
 
 ![AetherFM Icon](https://raw.githubusercontent.com/SalvatoreDevelopment/AetherFM/master/images/icon.png)

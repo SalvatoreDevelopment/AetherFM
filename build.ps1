@@ -31,6 +31,13 @@ if ($Clean) {
 
 # Deploy local version for testing
 if ($DeployLocal) {
+    Write-Host "Building the project in Release before local deploy..." -ForegroundColor Yellow
+    $buildResult = dotnet build --configuration Release
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Build error!" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Build completed successfully!" -ForegroundColor Green
     Write-Host "Deploying local build to devPlugins..." -ForegroundColor Yellow
     if (!(Test-Path $DalamudDevPath)) {
         New-Item -ItemType Directory -Path $DalamudDevPath -Force

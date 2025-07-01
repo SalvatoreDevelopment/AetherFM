@@ -5,6 +5,8 @@ using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using AetherFM.Windows;
+using System.Collections.Generic;
+using ImGuiNET;
 
 namespace AetherFM;
 
@@ -25,6 +27,9 @@ public sealed class Plugin : IDalamudPlugin
     private ConfigWindow ConfigWindow { get; init; }
     public RadioManager RadioManager { get; private set; }
     private RadioWindow RadioWindow { get; init; }
+    private MiniPlayerWindow MiniPlayerWindow { get; init; }
+
+    public List<RadiosureStation> Stations { get; set; } = new();
 
     public Plugin()
     {
@@ -33,9 +38,11 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow = new ConfigWindow(this);
         RadioManager = new RadioManager();
         RadioWindow = new RadioWindow(this);
+        MiniPlayerWindow = new MiniPlayerWindow(this);
 
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(RadioWindow);
+        WindowSystem.AddWindow(MiniPlayerWindow);
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -55,15 +62,31 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         RadioManager.Dispose();
         CommandManager.RemoveHandler(CommandName);
+        MiniPlayerWindow.IsOpen = false;
     }
 
     private void OnCommand(string command, string args)
     {
+        if (!string.IsNullOrWhiteSpace(args) && args.Trim().ToLowerInvariant() == "miniplayer")
+        {
+            ToggleMiniPlayer();
+            return;
+        }
         ToggleRadioUI();
     }
 
-    private void DrawUI() => WindowSystem.Draw();
+    private void DrawUI()
+    {
+        WindowSystem.Draw();
+        // Se tutte le finestre sono chiuse, ferma la radio
+        if (!RadioWindow.IsOpen && !MiniPlayerWindow.IsOpen)
+        {
+            if (RadioManager.GetStatus() == "Playing")
+                RadioManager.Stop();
+        }
+    }
 
     public void ToggleConfigUI() => ConfigWindow.Toggle();
     public void ToggleRadioUI() => RadioWindow.Toggle();
+    public void ToggleMiniPlayer() => MiniPlayerWindow.Toggle();
 } 

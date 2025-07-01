@@ -1,5 +1,7 @@
 # 🎵 AetherFM v1.0.0 - Initial Release
 
+**Note:** AetherFM is only supported on Windows. Audio playback is not available on Linux or non-Windows versions of Dalamud.
+
 ## ✨ Features
 - **Radio Browser API Integration**: Access to thousands of radio stations worldwide
 - **Modern UI**: Clean, intuitive interface with search and filtering capabilities
